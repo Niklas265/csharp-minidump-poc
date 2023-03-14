@@ -1,5 +1,5 @@
 # csharp-minidump
-Simple C-Sharp Minidump PoC
+Simple C-Sharp Minidump PoC i wrote to learn a bit of C#
 
 ## Check out:
 * https://github.com/slyd0g/C-Sharp-Out-Minidump
